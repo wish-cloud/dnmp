@@ -1,4 +1,3 @@
-version: "3"
 services:
   nginx:
     build:
@@ -9,13 +8,35 @@ services:
       - "443:443"
     volumes:
       - ${SOURCE_DIR}:/www/:rw
-      - ${NGINX_SSL_CERTIFICATE_DIR}:/ssl
-      - ${NGINX_CONFD_DIR}:/etc/nginx/conf.d
-      - ${NGINX_CONF_FILE}:/etc/nginx/nginx.conf
-      - ${NGINX_FASTCGI_PHP_CONF}:/etc/nginx/fastcgi-php.conf
-      - ${NGINX_FASTCGI_PARAMS}:/etc/nginx/fastcgi_params
-      - ${NGINX_LOG_DIR}:/var/log/nginx
+      - ./services/nginx/ssl:/ssl
+      - ./services/nginx/conf.d:/etc/nginx/conf.d
+      - ./services/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./services/nginx/fastcgi-php.conf:/etc/nginx/fastcgi-php.conf
+      - ./services/nginx/fastcgi_params:/etc/nginx/fastcgi_params
+      - ./logs/nginx:/var/log/nginx
     restart: always
+    networks:
+      - default
+
+  php83:
+    build:
+      context: ./services/php83
+      args:
+        DEBIAN_MIRROR_DOMAIN: deb.debian.org
+        PHP_EXTENSIONS: pdo_mysql mysqli mbstring gd curl mcrypt redis memcached imagick bcmath exif zip pcntl intl tidy sockets
+        TZ: "$TZ"
+    container_name: php83
+    expose:
+      - 9501
+    volumes:
+      - ${SOURCE_DIR}:/www/:rw
+      - ./services/php82/php.ini:/usr/local/etc/php/php.ini
+      - ./services/php82/php-fpm.conf:/usr/local/etc/php-fpm.d/www.conf
+      - ./logs/php83:/var/log/php
+      - ./data/composer:/tmp/composer
+    restart: always
+    cap_add:
+      - SYS_PTRACE
     networks:
       - default
 
@@ -24,22 +45,44 @@ services:
       context: ./services/php82
       args:
         DEBIAN_MIRROR_DOMAIN: deb.debian.org
-        PHP_EXTENSIONS: "$PHP82_EXTENSIONS"
+        PHP_EXTENSIONS: pdo_mysql mysqli mbstring gd curl mcrypt redis memcached imagick bcmath exif zip pcntl intl tidy sockets
         TZ: "$TZ"
     container_name: php82
     expose:
       - 9501
     volumes:
       - ${SOURCE_DIR}:/www/:rw
-      - ${PHP82_PHP_CONF_FILE}:/usr/local/etc/php/php.ini
-      - ${PHP82_FPM_CONF_FILE}:/usr/local/etc/php-fpm.d/www.conf
-      - ${PHP82_LOG_DIR}:/var/log/php
-      - ${PHP82_DATA_COMPOSER}:/tmp/composer
+      - ./services/php82/php.ini:/usr/local/etc/php/php.ini
+      - ./services/php82/php-fpm.conf:/usr/local/etc/php-fpm.d/www.conf
+      - ./logs/php82:/var/log/php
+      - ./data/composer:/tmp/composer
     restart: always
     cap_add:
       - SYS_PTRACE
     networks:
       - default
+
+  # php81:
+  #   build:
+  #     context: ./services/php81
+  #     args:
+  #       DEBIAN_MIRROR_DOMAIN: deb.debian.org
+  #       PHP_EXTENSIONS: pdo_mysql mysqli mbstring gd curl mcrypt redis memcached imagick swoole bcmath exif zip pcntl intl tidy sockets
+  #       TZ: "$TZ"
+  #   container_name: php81
+  #   expose:
+  #     - 9501
+  #   volumes:
+  #     - ${SOURCE_DIR}:/www/:rw
+  #     - ./services/php81/php.ini:/usr/local/etc/php/php.ini
+  #     - ./services/php81/php-fpm.conf:/usr/local/etc/php-fpm.d/www.conf
+  #     - ./logs/php81:/var/log/php
+  #     - ./data/composer:/tmp/composer
+  #   restart: always
+  #   cap_add:
+  #     - SYS_PTRACE
+  #   networks:
+  #     - default
 
 #  php80:
 #    build:
@@ -91,6 +134,32 @@ services:
 #     networks:
 #      - default
 
+  # php73:
+  #     build:
+  #       context: ./services/php73
+  #       args:
+  #         PHP_VERSION: php:7.3.33-fpm-alpine
+  #         CONTAINER_PACKAGE_URL: ${CONTAINER_PACKAGE_URL}
+  #         COMPOSER_URL: ${COMPOSER_URL}
+  #         PHP_EXTENSIONS: pdo_mysql,mysqli,mbstring,gd,curl,mcrypt,redis,memcached,imagick,swoole,bcmath,exif,zip,pcntl,intl,tidy
+  #         TZ: "$TZ"
+  #     container_name: php73
+  #     expose:
+  #       - 9501
+  #     extra_hosts:
+  #       - "www.site1.com:172.17.0.1"
+  #     volumes:
+  #       - ${SOURCE_DIR}:/www/:rw
+  #       - ./services/php73/php.ini:/usr/local/etc/php/php.ini:ro
+  #       - ./services/php73/php-fpm.conf:/usr/local/etc/php-fpm.d/www.conf:rw
+  #       - ./logs/php73:/var/log/php
+  #       - ${DATA_DIR}/composer:/tmp/composer
+  #     restart: always
+  #     cap_add:
+  #       - SYS_PTRACE
+  #     networks:
+  #       - default
+
 #  php56:
 #    build:
 #      context: ./services/php56
@@ -135,26 +204,27 @@ services:
 #    networks:
 #      - default
 
-  mysql:
-    image: mysql:${MYSQL_VERSION}
-    container_name: mysql
-    ports:
-      - "${MYSQL_HOST_PORT}:3306"
-    volumes:
-      - ${MYSQL_CONF_FILE}:/etc/mysql/conf.d/mysql.cnf:ro
-      - ${DATA_DIR}/mysql:/var/lib/mysql/:rw
-      - ${MYSQL_LOG_DIR}:/var/log/mysql/:rw
+  # mysql:
+  #   image: mysql:${MYSQL_VERSION}
+  #   container_name: mysql
+  #   ports:
+  #     - "${MYSQL_HOST_PORT}:3306"
+  #   volumes:
+  #     - ${MYSQL_CONF_FILE}:/etc/mysql/conf.d/mysql.cnf:ro
+  #     - ${DATA_DIR}/mysql:/var/lib/mysql/:rw
+  #     - ${MYSQL_LOG_DIR}:/var/log/mysql/:rw
 
-    restart: always
-    networks:
-      - default
-    environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
-      MYSQL_ROOT_HOST: "${MYSQL_ROOT_HOST}"
-      TZ: "$TZ"
+  #   restart: always
+  #   networks:
+  #     - default
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+  #     MYSQL_ROOT_HOST: "${MYSQL_ROOT_HOST}"
+  #     TZ: "$TZ"
 
   mysql5:
     image: mysql:${MYSQL5_VERSION}
+    platform: linux/amd64
     container_name: mysql5
     ports:
       - "${MYSQL5_HOST_PORT}:3306"
@@ -189,20 +259,20 @@ services:
 #    networks:
 #      - default
 
-#  redis:
-#    image: redis:${REDIS_VERSION}
-#    container_name: redis
-#    ports:
-#      - "${REDIS_HOST_PORT}:6379"
-#    volumes:
-#      - ${REDIS_CONF_FILE}:/etc/redis.conf:ro
-#      - ${DATA_DIR}/redis:/data/:rw
-#    restart: always
-#    entrypoint: ["redis-server", "/etc/redis.conf"]
-#    environment:
-#      TZ: "$TZ"
-#    networks:
-#      - default
+  redis:
+   image: redis:${REDIS_VERSION}
+   container_name: redis
+   ports:
+     - "${REDIS_HOST_PORT}:6379"
+   volumes:
+     - ${REDIS_CONF_FILE}:/etc/redis.conf:ro
+     - ${DATA_DIR}/redis:/data/:rw
+   restart: always
+   entrypoint: ["redis-server", "/etc/redis.conf"]
+   environment:
+     TZ: "$TZ"
+   networks:
+     - default
 
 #  memcached:
 #    image: memcached:${MEMCACHED_VERSION}
