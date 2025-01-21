@@ -1,4 +1,4 @@
-ARG PHP_VERSION=php:8.1-fpm-alpine
+ARG PHP_VERSION=php:8.4-fpm-alpine
 FROM ${PHP_VERSION}
 
 ARG TZ

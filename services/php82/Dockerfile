@@ -1,22 +1,16 @@
-ARG PHP_VERSION
-FROM php:8.2-fpm
+ARG PHP_VERSION=php:8.2-fpm-alpine
+FROM ${PHP_VERSION}
 
 ARG TZ
 ARG PHP_EXTENSIONS
-ARG DEBIAN_MIRROR_DOMAIN
-
+ARG CONTAINER_PACKAGE_URL
 ENV TZ=${TZ}
 
-# Set debian mirror
-RUN sed -i "s|deb.debian.org|${DEBIAN_MIRROR_DOMAIN}|g" /etc/apt/sources.list.d/debian.sources
+RUN if [ "${CONTAINER_PACKAGE_URL}" != "" ] ; then sed -i "s/dl-cdn.alpinelinux.org/${CONTAINER_PACKAGE_URL}/g" /etc/apk/repositories ; fi
 
-# Install required packages
-RUN export option="--no-install-recommends -y" \
-    && apt-get $option update \
-    && apt-get $option install tzdata curl
-
-# Clean up the package list to reduce image size
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apk --no-cache add tzdata curl \
+    && cp "/usr/share/zoneinfo/$TZ" /etc/localtime \
+    && echo "$TZ" > /etc/timezone
 
 # Install PHP extensions
 RUN curl -sSLf -o /usr/local/bin/install-php-extensions https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions \
@@ -26,6 +20,9 @@ RUN curl -sSLf -o /usr/local/bin/install-php-extensions https://github.com/mloca
 # Install composer and change it's cache home
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 ENV COMPOSER_HOME=/tmp/composer
+
+# php image's www-data user uid & gid are 82, change them to 1000 (primary user)
+RUN apk --no-cache add shadow && usermod -u 1000 www-data && groupmod -g 1000 www-data
 
 # Set work directory
 WORKDIR /www

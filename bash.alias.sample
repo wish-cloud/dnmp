@@ -23,6 +23,19 @@ php () {
         dnmp-php83 "$@"
 }
 
+
+php84 () {
+    tty=
+    tty -s && tty=--tty
+    docker run \
+        $tty \
+        --interactive \
+        --rm \
+        --volume $PWD:/www:rw \
+        --workdir /www \
+        dnmp-php84 php "$@"
+}
+
 php83 () {
     tty=
     tty -s && tty=--tty
@@ -123,6 +136,21 @@ composer83 () {
         --rm \
         --user www-data:www-data \
         --volume ~/dnmp/data/composer:/tmp/composer \
+        --volume $(pwd):/app \
+        --workdir /app \
+        dnmp-php83 composer "$@"
+}
+
+# php8.4 composer
+composer84 () {
+    tty=
+    tty -s && tty=--tty
+    docker run \
+        $tty \
+        --interactive \
+        --rm \
+        --user www-data:www-data \
+        --volume /Volumes/Data/workspace/dnmp/data/composer:/tmp/composer \
         --volume $(pwd):/app \
         --workdir /app \
         dnmp-php83 composer "$@"
