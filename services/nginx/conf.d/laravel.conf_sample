@@ -1,0 +1,29 @@
+server {
+    listen       80;
+    listen 443 ssl;
+    server_name  laravel.test; #网站域名
+
+    index index.php index.html;
+    root   /www/laravel/public; #网站根路径
+
+    #测试证书
+    ssl_certificate /ssl/localhost/localhost.crt;
+    ssl_certificate_key /ssl/localhost/localhost.key;
+
+    location ~ [^/]\.php(/|$)
+	{
+		fastcgi_pass  php83:9000;
+		include  fastcgi-php.conf;
+        include  fastcgi_params;
+	}
+
+    #日志文件
+    access_log /dev/null;
+    #access_log  /var/log/nginx/laravel.access.log  main;
+    error_log  /var/log/nginx/laravel.error.log  warn;
+
+    #网站伪静态
+    location / {
+	    try_files $uri $uri/ /index.php$is_args$query_string;
+    }
+}
