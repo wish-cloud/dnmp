@@ -254,7 +254,7 @@ services:
 
   mysql5:
     image: mysql:${MYSQL5_VERSION}
-    platform: linux/amd64
+    platform: linux/amd64 # 指定使用 amd64 平台,ARM及mac芯片m1-m4需要打开
     container_name: mysql5
     ports:
       - "${MYSQL5_HOST_PORT}:3306"
@@ -269,6 +269,20 @@ services:
       MYSQL_ROOT_PASSWORD: "${MYSQL5_ROOT_PASSWORD}"
       MYSQL_ROOT_HOST: "${MYSQL5_ROOT_HOST}"
       TZ: "$TZ"
+
+  postgresql:
+    container_name: postgresql
+    environment:
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=secret
+    image: postgres:17.5-alpine
+    networks:
+        - default
+    ports:
+        - 5432:5432
+    restart: always
+    volumes:
+        - ${DATA_DIR}/postgresql/data:/var/lib/postgresql/data
 
   #  openresty:
   #    image:  openresty/openresty:${OPENRESTY_VERSION}
